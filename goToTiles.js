@@ -1,3 +1,27 @@
+function addGoTile(x, y) {
+    if (x > 7 || x < 0 || y > 7 || y < 0) {
+        return
+    }
+    if (selectedY != y || selectedX != x) {
+        if (board[x][y] == "") {
+            goTiles.push({ x: x, y: y });
+            return 1;
+        } else if (getSide(board[x][y]) != getSide(selectedPeice)) {
+            goTiles.push({ x: x, y: y });
+            return 2;
+        }
+        for (sTile in sTiles) {
+
+            if (sTile.x == x && sTile.y == y) {
+                goSTiles.push({ x: x, y: y });
+            }
+
+        }
+        return 3;
+    }
+    return 0;
+}
+
 function goRook() {
     if (selectedPeice.toLowerCase() == "r" || selectedPeice.toLowerCase() == "q") {
         for (let x = selectedX + 1; x < 8; x++) {
@@ -94,9 +118,9 @@ function goPawn() {
     if (selectedPeice.toLowerCase() == "p") {
         if (getSide(selectedPeice)) {
 
-            if (board[selectedX][selectedY+1] == "") {
+            if (board[selectedX][selectedY + 1] == "") {
                 addGoTile(selectedX, selectedY + 1);
-                if (selectedY == 1 && board[selectedX][selectedY+2] == "") {
+                if (selectedY == 1 && board[selectedX][selectedY + 2] == "") {
                     addGoTile(selectedX, 3);
                 }
             }
@@ -113,9 +137,9 @@ function goPawn() {
 
         } else {
 
-            if (board[selectedX][selectedY-1] == "") {
+            if (board[selectedX][selectedY - 1] == "") {
                 addGoTile(selectedX, selectedY - 1);
-                if (selectedY == 6 && board[selectedX][selectedY-2] == "") {
+                if (selectedY == 6 && board[selectedX][selectedY - 2] == "") {
                     addGoTile(selectedX, 4);
                 }
             }
@@ -138,10 +162,10 @@ function goPawn() {
 function goKing() {
     if (selectedPeice.toLowerCase() == "k") {
 
-        for (let x=-1; x<2; x++) {
-            for (let y=-1; y<2; y++) {
-                
-                addGoTile(selectedX+x, selectedY+y);
+        for (let x = -1; x < 2; x++) {
+            for (let y = -1; y < 2; y++) {
+
+                addGoTile(selectedX + x, selectedY + y);
 
             }
         }
@@ -152,17 +176,17 @@ function goKing() {
 function goHorse() {
     if (selectedPeice.toLowerCase() == "h") {
 
-        addGoTile(selectedX+2, selectedY+1);
-        addGoTile(selectedX+2, selectedY-1);
+        addGoTile(selectedX + 2, selectedY + 1);
+        addGoTile(selectedX + 2, selectedY - 1);
 
-        addGoTile(selectedX-2, selectedY+1);
-        addGoTile(selectedX-2, selectedY-1);
+        addGoTile(selectedX - 2, selectedY + 1);
+        addGoTile(selectedX - 2, selectedY - 1);
 
-        addGoTile(selectedX+1, selectedY+2);
-        addGoTile(selectedX+1, selectedY-2);
+        addGoTile(selectedX + 1, selectedY + 2);
+        addGoTile(selectedX + 1, selectedY - 2);
 
-        addGoTile(selectedX-1, selectedY+2);
-        addGoTile(selectedX-1, selectedY-2);
+        addGoTile(selectedX - 1, selectedY + 2);
+        addGoTile(selectedX - 1, selectedY - 2);
 
     }
 }

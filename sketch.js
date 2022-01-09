@@ -12,38 +12,10 @@
 // k = king
 // q = queen
 
-let wins = 0;
-let data = [];
-let timeSinceTake = 0;
-let maxNetwork = 100;
-let lastSave = 0;
-let generation = 0;
-let recordGeneration = 0;
-let record = 0;
-let recordNetwork;
-let autoplay = false;
-let networks = [];
-let activeNetwork = 0;
-let win;
-let goTiles = [];
-let goSTiles = [];
-let sTiles = [];
-let selectedPeice;
-let turn = true;
-let selectedX;
-let selectedY;
-let tileW;
-let tileH;
-let board = []
-let aiCount = 16;
-for (let x = 0; x < 8; x++) {
-  if (board[x] == null) {
-    board[x] = [];
-  }
-  for (let y = 0; y < 8; y++) {
-    board[x][y] = "";
-  }
-}
+let black = new Side("Black");
+let white = new Side("White", black);
+black.setOtherSide(white);
+let turn = white;
 
 let assets = {
 
@@ -62,85 +34,6 @@ let assets = {
 
 }
 
-let scales = {
-
-  P: 0,
-  K: 0,
-  B: 0,
-  R: 0,
-  H: 0,
-  Q: 0,
-  p: 0,
-  k: 0,
-  b: 0,
-  h: 0,
-  q: 0,
-  r: 0
-
-}
-
-function reset() {
-
-  win = null;
-  lgoTiles = [];
-  selectedPeice = null;
-  turn = true;
-  selectedX = null;
-  selectedY = null;
-  aiCount = 16;
-
-  for (let x = 0; x < 8; x++) {
-    for (let y = 2; y < 6; y++) {
-      board[x][y] = "";
-    }
-  }
-
-  // chess setup
-  if (width > height) {
-    tileW = height / 8;
-    tileH = height / 8;
-  } else if (width < height) {
-    tileW = width / 8;
-    tileH = width / 8;
-  }
-
-  for (let x = 0; x < 8; x++) {
-    board[x][1] = "P";
-    board[x][6] = "p";
-  }
-
-  let peices = ["P", "B", "R", "H", "K", "Q", "p", "b", "r", "k", "h", "q"];
-
-  for (key of peices) {
-
-    assets[key].resize(assets[key].width / assets[key].height * tileW, tileH)
-
-  }
-
-  board[0][0] = "R";
-  board[1][0] = "H";
-  board[2][0] = "B";
-  board[3][0] = "K";
-
-  board[4][0] = "Q";
-  board[5][0] = "B";
-  board[6][0] = "H";
-  board[7][0] = "R";
-
-  board[0][7] = "r";
-  board[1][7] = "h";
-  board[2][7] = "b";
-  board[3][7] = "k";
-
-  board[4][7] = "q";
-  board[5][7] = "b";
-  board[6][7] = "h";
-  board[7][7] = "r";
-
-  loop();
-
-}
-
 function preload() {
 
   let peices = ["P", "B", "R", "H", "K", "Q", "p", "b", "r", "k", "h", "q"];
@@ -150,289 +43,218 @@ function preload() {
     assets[key] = loadImage(assets[key]);
 
   }
-
-
-  //loadJSON("record.json", "json", recordLoaded, recordUnloaded);
-  noLoop();
-  recordUnloaded();
-}
-
-function recordLoaded(data) {
-
-  // AI
-
-  let network = NeuralNetwork.deserialize(data.n);
-
-  record = data.r;
-  recordNetwork = network;
-  recordGeneration = data.g;
-  generation = data.g;
-  lastSave = data.g;
-
-  networks[0] = { n: network, f: 0 };
-  loop();
-}
-
-function recordUnloaded() {
-
-  // AI
-
-  networks[0] = { n: new NeuralNetwork(64, 100, 2), f: 0 };
-  loop();
 }
 
 function setup() {
+
   createCanvas(windowWidth, windowHeight);
-  reset();
+  board = new Board();
+
+  let peices = ["P", "B", "R", "H", "K", "Q", "p", "b", "r", "k", "h", "q"];
+
+  for (key of peices) {
+
+    assets[key].resize(assets[key].width / assets[key].height * board.tileSize, board.tileSize)
+
+  }
+
+  // makes pawns
+
+  for (let i = 0; i < 8; i++) {
+
+    new Pawn(white, i, 1);
+    new Peice(null, i, 2);
+    new Peice(null, i, 3);
+    new Peice(null, i, 4);
+    new Peice(null, i, 5);
+    new Pawn(black, i, 6);
+
+  }
+
+  
+  new Horse(white, 1, 0);
+  new Bishop(white, 2, 0);
+  white.addKing(new King(white, 3, 0, new Rook(white, 0, 0), new Rook(white, 7, 0)));
+  new Queen(white, 4, 0);
+  new Bishop(white, 5, 0);
+  new Horse(white, 6, 0);
+
+  new Horse(black, 1, 7);
+  new Bishop(black, 2, 7);
+  black.addKing(new King(black, 3, 7, new Rook(black, 0, 7), new Rook(black, 7, 7)));
+  new Queen(black, 4, 7);
+  new Bishop(black, 5, 7);
+  new Horse(black, 6, 7);
+
 }
 
 function draw() {
-    background(0);
-  // if (turn) {
-  //   background(255);
-  // } else {
-  //   background(0);
-  // }
 
-  if (win != null) {
-    noLoop();
-  }
+  background(0);
+
+  board.draw();
 
   for (let x = 0; x < 8; x++) {
-
     for (let y = 0; y < 8; y++) {
 
-      fill(120, 80, 0);
-      if (x % 2 == y % 2) {
-
-        fill(255, 224, 161);
-
-      }
-
-      rect(x * tileW, y * tileH, tileW, tileH);
+      board.getTile(x, y).draw();
 
     }
-
   }
 
-  if (selectedX != null && selectedY != null) {
-
-    fill(53, 176, 55, 200);
-    rect(selectedX * tileW, selectedY * tileH, tileW, tileH);
-
-  }
-
-  for (spot of goTiles) {
-    fill(3, 177, 252, 150);
-    rect(spot.x * tileW, spot.y * tileH, tileW, tileH)
-  }
-
-  for (let x = 0; x < 8; x++) {
-
-    for (let y = 0; y < 8; y++) {
-
-      if (board[x][y] != "") {
-
-        image(assets[board[x][y]], x * tileW + (tileW - assets[board[x][y]].width) / 2, y * tileH);
-
-      }
-    }
-
-  }
-
-  if (autoplay) {
-
-    if (turn == aciSide) {
-      acmakeMove();
-    } else {
-      amakeMove();
-    }
-
-  }
-
-  if (win == true) {
-    background(255);
-    if (autoplay) {
-      for (info of data) {
-        networks[0].n.train(info[0], info[1]);
-      }
-      wins++;
-      data = [];
-      prereset();
-      print("white wins!");
-    }
-  } else if (win == false) {
-    background(0);
-    if (autoplay) {
-      prereset();
-      print("black wins!");
-    }
-  }
-
-   if (recordGeneration - lastSave > 100 || wins > 20) {
-    
-    print(wins)
-    saveJSON({ n: recordNetwork, r: record, g: recordGeneration }, "chess_" + recordGeneration + ".json");
-    lastSave = recordGeneration;
-    wins = 0;
-
-  } 
+  play();
 
 }
 
 function windowResized() {
-  resizeCanvas(windowWidth - 300, windowHeight);
+
+  resizeCanvas(windowWidth, windowHeight);
+
 }
 
 function keyPressed() {
-  if (win != null) {
-    return;
-  }
-  if (key == " ") {
-    autoplay = !autoplay;
-    return;
-  }
-  if (key == "s") {
 
-    print(recordNetwork)
-    saveJSON({ n: recordNetwork, r: record, g: recordGeneration }, "chess_" + recordGeneration + ".json");
-    lastSave = recordGeneration;
-    return;
+  // if ((turn && white != "hum") || (!turn && black != "hum")) {
 
-  }
-  if (autoplay) {
-    return;
-  }
-  if (turn == aciSide) {
-    acmakeMove();
-  } else {
-    amakeMove();
-  }
-}
+  //   play()
 
-function prereset() {
+  // }
 
-
-
-  reset();
-  return;
-
-  let network = networks[activeNetwork];
-
-  if (win == naiSide) {
-
-    network.f = network.f * 10
-
-  }
-
-  print(network, network.f, record);
-  if (network.f > record) {
-
-    record = network.f;
-    recordNetwork = network.n;
-    recordGeneration = generation;
-
-    print("new record!");
-
-  }
-
-  activeNetwork++;
-
-  if (activeNetwork == networks.length) {
-    nextGeneration();
-  }
-
-  reset();
-  return;
 }
 
 function mousePressed() {
 
-  if (win != null && !autoplay) {
+  if (turn.isHuman()) {
 
-    prereset();
+    let x = floor(mouseX / board.tileSize);
+    let y = floor(mouseY / board.tileSize);
 
-  }
-  return
-  x = floor(mouseX / tileW);
-  y = floor(mouseY / tileH);
+    board.selectTile(x, y);
 
-  // move peice
+    if (board.selectedTile != null) {
 
-  for (tile of goTiles) {
-    if (tile.x == x && tile.y == y) {
+      let goTiles = board.selectedTile.getGoTile();
 
-      if (board[tile.x][tile.y] == "k") {
-        win = true;
-      } else if (board[tile.x][tile.y] == "K") {
-        win = false;
+      for (let goTile of goTiles) {
+
+        if (goTile.x == x && goTile.y == y) {
+
+          board.selectedTile.move(goTile);
+          nextTurn();
+
+        }
+
       }
-
-      if (getSide(board[tile.x][tile.y]) == naiSide) {
-        aiCount = aiCount - 1;
-      }
-
-      board[selectedX][selectedY] = "";
-      board[tile.x][tile.y] = selectedPeice;
-      turn = !turn;
-      selectedX = null;
-      selectedY = null;
-      selectedPeice = "";
-      goTiles = [];
-
     }
 
   }
 
-  // select tile
-  if (getSide(board[x][y]) == turn) {
-    selectedX = x;
-    selectedY = y;
-    selectedPeice = board[x][y];
-    goTiles = [];
+}
+
+function play() {
+
+  if (turn == white) {
+
+    if (white.isNetwork()) {
+
+      // do neural net
+
+    } else if (white.isAlgorithm()) {
+
+      let move = calculateMove();
+
+      move.peice.move(move.tile);
+      nextTurn();
+
+    } else {
+
+      // human stuff
+
+    }
+
   } else {
-    return
+
+    if (black.isNetwork()) {
+
+      // do neural net
+
+    } else if (black.isAlgorithm()) {
+
+      // algorithim
+
+    } else {
+
+
+
+
+    }
+
   }
 
-  // find go tiles
-  goRook();
-  goBishop();
-  goPawn();
-  goKing();
-  goHorse();
+  if (isChecked(turn)) {
+
+    if (!turn.isCheck()) {
+
+      turn.check();
+      print(turn.getName() + " is in check");
+
+    }
+
+  }
+
+  if (!isChecked(turn.getOtherSide())) {
+
+    if (turn.getOtherSide().isCheck()) {
+      turn.getOtherSide().uncheck();
+      print(turn.getOtherSide().getName() + " is no longer in check");
+
+    }
+
+  }
 
 }
 
-function getSide(peice) {
+function isChecked(side) {
 
-  if (peice == "") {
-    return null;
+  let moves = getMoves(side.getOtherSide(), maxDepth - 1);
+
+  for (let move of moves) {
+
+    if (move.tile.isKing()) {
+
+      return true;
+
+    }
+
   }
 
-  return (peice.toUpperCase() == peice);
+  return false;
 
 }
 
-function addGoTile(x, y) {
-  if (x > 7 || x < 0 || y > 7 || y < 0) {
-    return
-  }
-  if (selectedY != y || selectedX != x) {
-    if (board[x][y] == "") {
-      goTiles.push({ x: x, y: y });
-      return 1;
-    } else if (getSide(board[x][y]) != getSide(selectedPeice)) {
-      goTiles.push({ x: x, y: y });
-      return 2;
-    }
-    for (sTile in sTiles) {
+function win(side) {
 
-      if (sTile.x == x && sTile.y == y) {
-        goSTiles.push({ x: x, y: y });
-      }
+  board.draw();
+
+  for (let x = 0; x < 8; x++) {
+    for (let y = 0; y < 8; y++) {
+
+      board.getTile(x, y).draw();
 
     }
-    return 3;
   }
-  return 0;
+
+  print(side.getName() + " won!")
+
+  noLoop();
+
+}
+
+function nextTurn() {
+
+  board.unselect();
+
+
+
+  turn = turn.getOtherSide();
 }
